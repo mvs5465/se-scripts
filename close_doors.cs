@@ -18,12 +18,30 @@ public void Main(string argument, UpdateType updateSource)
     {
         if (door.Status == DoorStatus.Open)
         {
-            if (doorStatuses[door.CustomName] > 5)
+            if (door.CustomName.Contains("Airlock") && doorStatuses[door.CustomName] > 0)
             {
                 door.CloseDoor();
                 doorStatuses[door.CustomName] = 0;
             }
-            else {
+            else if (door.CustomName.Contains("Hangar"))
+            {
+                if (doorStatuses[door.CustomName] > 1000)
+                {
+                    door.CloseDoor();
+                    doorStatuses[door.CustomName] = 0;
+                }
+                else
+                {
+                    doorStatuses[door.CustomName] += + 1;
+                }
+            }
+            else if (doorStatuses[door.CustomName] > 3)
+            {
+                door.CloseDoor();
+                doorStatuses[door.CustomName] = 0;
+            }
+            else
+            {
                 doorStatuses[door.CustomName] = doorStatuses[door.CustomName] + 1;
             }
         }
