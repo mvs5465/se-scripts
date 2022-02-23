@@ -25,7 +25,7 @@ public void Main(string argument, UpdateType updateSource)
             }
             else if (door.CustomName.Contains("Hangar"))
             {
-                if (doorStatuses[door.CustomName] > 1000)
+                if (doorStatuses[door.CustomName] > 500)
                 {
                     door.CloseDoor();
                     doorStatuses[door.CustomName] = 0;

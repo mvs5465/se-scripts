@@ -1,7 +1,7 @@
 readonly List<IMyInventory> _inventories = new List<IMyInventory>();
 readonly List<IMyAssembler> _assemblers = new List<IMyAssembler>();
 readonly List<IMyInventory> _storageInventories = new List<IMyInventory>();
-readonly IMyInteriorLight trashLight;
+readonly IMyLightingBlock trashLight;
 const string TYPE_COMPONENT = "MyObjectBuilder_Component";
 const string TYPE_OXYGENBOTTLE = "MyObjectBuilder_OxygenContainerObject";
 const string TYPE_HYDROGENBOTTLE = "MyObjectBuilder_GasContainerObject";
@@ -13,8 +13,8 @@ public Program()
     GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(allBlocks, block => block.IsSameConstructAs(Me));
     GridTerminalSystem.GetBlocksOfType<IMyAssembler>(_assemblers, assembler => assembler.IsSameConstructAs(Me));
     
-    List<IMyInteriorLight> lights = new List<IMyInteriorLight>();
-    GridTerminalSystem.GetBlocksOfType<IMyInteriorLight>(lights, light => light.IsSameConstructAs(Me));
+    List<IMyLightingBlock > lights = new List<IMyLightingBlock >();
+    GridTerminalSystem.GetBlocksOfType<IMyLightingBlock >(lights, light => light.IsSameConstructAs(Me));
     foreach (var light in lights) {
         if (light.CustomName.Contains("Trash Light")) {
             trashLight = light;
@@ -22,11 +22,15 @@ public Program()
         }
     }
 
+    if (trashLight == null) {
+        Echo("WARN: No Trash Light detected! Exiting...");
+        return;
+    }
+
     // Populate our tracking lists
     foreach (var block in allBlocks)
     {
-        if (
-            block.CustomName.Contains("Control Seat") || 
+        if ( 
             block.CustomName.Contains("Turret") ||
             block.CustomName.Contains("O2/H2 Generator") ||
             block.CustomName.Contains("Reactor")
@@ -86,13 +90,27 @@ public void Main(string argument, UpdateType updateSource)
                 items[i].Type.TypeId.ToString() == TYPE_TOOL ||
                 items[i].Type.TypeId.ToString() == TYPE_HYDROGENBOTTLE
             ) {
-                var assemblersFull = false;
+                var assemblerTransferSuccessful = false;
                 for (int j = _assemblers.Count-1; j >= 0; j--) {
-                    assemblersFull = inventory.TransferItemTo(_assemblers[j].OutputInventory, i, stackIfPossible: true, amount: (items[i].Amount.ToIntSafe()/(j+1)));
+                    assemblerTransferSuccessful = inventory.TransferItemTo(_assemblers[j].OutputInventory, i, stackIfPossible: true, amount: (items[i].Amount.ToIntSafe()/(j+1)));
                 }
-                inventory.TransferItemTo(_storageInventories[1], i, stackIfPossible: true);
+                if (!assemblerTransferSuccessful) {
+                    for (int k = _storageInventories.Count-1; k >= 0; k--) {
+                        if (inventory.TransferItemTo(_storageInventories[k], i, stackIfPossible: true)) {
+                            break;
+                        }
+                    }
+                }
+
             } else {
-                inventory.TransferItemTo(_storageInventories[0], i, stackIfPossible: true);
+                if (!_storageInventories.Contains(inventory)) {
+                    for (int k = 0; k < _storageInventories.Count; k++) {
+                        inventory.TransferItemTo(_storageInventories[k], i, stackIfPossible: true);
+                        // if (inventory.TransferItemTo(_storageInventories[k], i, stackIfPossible: true)) {
+                        //     break;
+                        // }
+                    }
+                }
             }
         }
     }
